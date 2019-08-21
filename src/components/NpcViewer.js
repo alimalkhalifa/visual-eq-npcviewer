@@ -60,15 +60,15 @@ class NpcViewer extends React.Component {
           let url = src.substr(0, src.indexOf(base))
           let newbase
           if (name.indexOf('HE', 3) !== -1) {
-            console.log(base)
-            newbase = base.replace(/(00)/, (sub) => {
-              let face = String(this.props.face)
-              while (face.length < sub.length) {
-                face = '0' + face
-              }
-              return face
-            })
-            console.log(newbase)
+            let texture = String(this.props.texture)
+            while (texture.length < 2) {
+              texture = '0' + texture
+            }
+            let face = String(this.props.face)
+            while (face.length < 2) {
+              face = '0' + face
+            }
+            newbase = base.substr(0, 5) + texture + face + base.substr(9)
           } else if (body && base.indexOf(this.props.race.toLowerCase()) !== -1) {
             newbase = base
           } else {

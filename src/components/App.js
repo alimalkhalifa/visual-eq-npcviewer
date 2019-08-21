@@ -9,7 +9,7 @@ class App extends React.Component {
       race: 'ORC',
       texture: 0,
       helm: 0,
-      face: 0
+      face: 1
     }
     this.changeRace = this.changeRace.bind(this)
     this.changeTexture = this.changeTexture.bind(this)
