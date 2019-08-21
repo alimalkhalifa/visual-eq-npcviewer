@@ -8,12 +8,18 @@ class NpcViewer extends React.Component {
     return (
       <div ref={ref => (this.mount = ref)} style={{
         width: '100%',
-        height: '300px'
+        height: '100%'
       }}>
       </div>
     )
   }
   componentDidMount() {
+    this.create()
+  }
+  componentWillUnmount() {
+    this.destroy(true)
+  }
+  create() {
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(0x111111)
     this.camera = new THREE.PerspectiveCamera(70, this.mount.clientWidth / this.mount.clientHeight, 1, 100)
@@ -26,9 +32,8 @@ class NpcViewer extends React.Component {
     this.scene.add(this.camera)
     let loader = new GLTFLoader()
     loader.load(`graphics/characters/${this.props.race}.glb`, gltf => {
-      console.log(this.props.texture)
       this.subject = gltf.scene
-      this.subject.traverse(mesh => {
+      gltf.scene.traverse(mesh => {
         if (mesh.name.indexOf('HE', 3) !== -1) {
           let helm = parseInt(mesh.name.substr(5, 2))
           if (helm !== this.props.helm) {
@@ -45,7 +50,7 @@ class NpcViewer extends React.Component {
             }
           }
         }
-        if (mesh.material && mesh.visible && mesh.parent.visible && this.props.texture > 0) {
+        if (mesh.material && mesh.visible && mesh.parent.visible && (this.props.texture > 0 || this.props.face > 0)) {
           let name = mesh.name.indexOf('mesh') !== -1 ? mesh.parent.name : mesh.name
           let body = false
           if (this.props.texture > 10) body = true
@@ -55,13 +60,15 @@ class NpcViewer extends React.Component {
           let url = src.substr(0, src.indexOf(base))
           let newbase
           if (name.indexOf('HE', 3) !== -1) {
-            newbase = base.replace(/(0000)/, (sub) => {
+            console.log(base)
+            newbase = base.replace(/(00)/, (sub) => {
               let face = String(this.props.face)
               while (face.length < sub.length) {
                 face = '0' + face
               }
               return face
             })
+            console.log(newbase)
           } else if (body && base.indexOf(this.props.race.toLowerCase()) !== -1) {
             newbase = base
           } else {
@@ -90,19 +97,27 @@ class NpcViewer extends React.Component {
       this.scene.add(this.subject)
     })
     this.clock = new THREE.Clock()
-    this.renderer = new THREE.WebGLRenderer()
+    if (!this.renderer) {
+      this.renderer = new THREE.WebGLRenderer()
+      this.mount.appendChild(this.renderer.domElement)
+    }
     this.renderer.gammaOutput = true
     this.renderer.gammaFactor = 2.2
     this.renderer.setSize(this.mount.clientWidth, this.mount.clientHeight)
-    this.mount.appendChild(this.renderer.domElement)
     this.animate()
   }
-  componentWillUnmount() {
+  destroy(alsoRenderer) {
     this.scene.dispose()
-    this.renderer.forceContextLoss()
-    this.renderer.context = null
-    this.renderer.domElement = null
-    this.renderer.dispose()
+    if (alsoRenderer) {
+      this.renderer.forceContextLoss()
+      this.renderer.context = null
+      this.renderer.domElement = null
+      this.renderer.dispose()
+    }
+  }
+  componentDidUpdate() {
+    this.destroy()
+    this.create()
   }
   animate() {
     requestAnimationFrame(() => this.animate())
