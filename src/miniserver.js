@@ -56,12 +56,13 @@ app.get('/races/:racename', (req, res) => {
         }
       })
       let keys = Object.keys(imageSpecs)
+      console.log(keys)
       let he = keys.filter(value => value.indexOf('he0001', 3) !== -1)[0]
       let lg = keys.filter(value => value.indexOf('lg0001', 3) !== -1)[0]
       let modelSpec = {
-        maxFace: imageSpecs[he].maxFace,
+        maxFace: he ? imageSpecs[he].maxFace : 0,
         maxHelm,
-        maxTexture: imageSpecs[lg].maxTexture,
+        maxTexture: lg ? imageSpecs[lg].maxTexture : he ? he + 1 < keys.length ? he + 1 : he - 1 : imageSpecs[0].maxTexture,
         imageSpecs
       }
       console.log(imageSpecs)
