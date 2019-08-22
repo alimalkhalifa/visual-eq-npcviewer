@@ -30,8 +30,29 @@ class NpcViewer extends React.Component {
     this.camera.position.set(10, 0, 0)
     this.camera.lookAt(0, 0, 0)
     this.scene.add(this.camera)
+    this.clock = new THREE.Clock()
+    this.loadModel(this.props.race)
+    if (!this.renderer) {
+      this.renderer = new THREE.WebGLRenderer()
+      this.mount.appendChild(this.renderer.domElement)
+    }
+    this.renderer.gammaOutput = true
+    this.renderer.gammaFactor = 2.2
+    this.renderer.setSize(this.mount.clientWidth, this.mount.clientHeight)
+    this.animate()
+  }
+  destroy(alsoRenderer) {
+    this.scene.dispose()
+    if (alsoRenderer) {
+      this.renderer.forceContextLoss()
+      this.renderer.context = null
+      this.renderer.domElement = null
+      this.renderer.dispose()
+    }
+  }
+  loadModel(race) {
     let loader = new GLTFLoader()
-    loader.load(`graphics/characters/${this.props.race}.glb`, gltf => {
+    loader.load(`graphics/characters/${race}.glb`, gltf => {
       this.subject = gltf.scene
       gltf.scene.traverse(mesh => {
         if (mesh.name.indexOf('HE', 3) !== -1) {
@@ -61,14 +82,13 @@ class NpcViewer extends React.Component {
           let newbase
           if (name.indexOf('HE', 3) !== -1) {
             let texture = String(this.props.texture)
+            if (this.props.modelSpecs.imageSpecs[base].maxTexture < texture) texture = String(this.props.modelSpecs.imageSpecs[base].maxTexture)
             while (texture.length < 2) {
               texture = '0' + texture
             }
             let face = String(this.props.face)
-            while (face.length < 2) {
-              face = '0' + face
-            }
-            newbase = base.substr(0, 5) + texture + face + base.substr(9)
+            if (this.props.modelSpecs.imageSpecs[base].maxFace < face) face = String(this.props.modelSpecs.imageSpecs[base].maxFace)
+            newbase = base.substr(0, 5) + texture + face + base.substr(8)
           } else if (body && base.indexOf(this.props.race.toLowerCase()) !== -1) {
             newbase = base
           } else {
@@ -82,7 +102,6 @@ class NpcViewer extends React.Component {
               })
             } else {
               newbase = base.substr(0, 3)
-              let startNum = parseInt(base.substr(3, 2))
               newbase += String(texture)
               newbase += base.substr(5)
             }
@@ -96,34 +115,23 @@ class NpcViewer extends React.Component {
       })
       this.scene.add(this.subject)
     })
-    this.clock = new THREE.Clock()
-    if (!this.renderer) {
-      this.renderer = new THREE.WebGLRenderer()
-      this.mount.appendChild(this.renderer.domElement)
-    }
-    this.renderer.gammaOutput = true
-    this.renderer.gammaFactor = 2.2
-    this.renderer.setSize(this.mount.clientWidth, this.mount.clientHeight)
-    this.animate()
-  }
-  destroy(alsoRenderer) {
-    this.scene.dispose()
-    if (alsoRenderer) {
-      this.renderer.forceContextLoss()
-      this.renderer.context = null
-      this.renderer.domElement = null
-      this.renderer.dispose()
-    }
   }
   componentDidUpdate() {
-    this.destroy()
-    this.create()
+    this.loadModel(this.props.race)
   }
   animate() {
     requestAnimationFrame(() => this.animate())
     let delta = this.clock.getDelta()
     if (this.subject) this.subject.rotateZ(delta * Math.PI / 4)
+    this.cullScene()
     this.renderThree()
+  }
+  cullScene() {
+    this.scene.children.forEach(child => {
+      if (child !== this.subject) {
+        this.scene.remove(child)
+      }
+    })
   }
   renderThree() {
     this.renderer.render(this.scene, this.camera)
