@@ -32,7 +32,7 @@ class InfoBox extends React.Component {
           <div className="form-group">
             <label>Texture</label>
             <input type="number" className="form-control" value={this.props.texture} onChange={this.props.changeTexture} />
-            <small className="form-text text-muted">Maximum valid texture is {this.props.modelSpecs.maxTexture}.</small>
+            <small className="form-text text-muted">Maximum valid texture is {this.props.body > 0 ? this.props.modelSpecs.maxBodyTexture : this.props.modelSpecs.maxTexture}.</small>
           </div>
           <div className="form-group">
             <label>Face</label>
@@ -43,6 +43,15 @@ class InfoBox extends React.Component {
             <label>Helm</label>
             <input type="number" className="form-control" value={this.props.helm} onChange={this.props.changeHelm} />
             <small className="form-text text-muted">Maximum valid helm is {this.props.modelSpecs.maxHelm}.</small>
+          </div>
+          <div className="form-group">
+            <label>Body</label>
+            <input type="number" className="form-control" value={this.props.body} onChange={this.props.changeBody} />
+            <small className="form-text text-muted">Maximum valid body is {this.props.modelSpecs.maxBody}.</small>
+          </div>
+          <div className="form-group">
+            <label>Camera Distance</label>
+            <input type="number" className="form-control" value={this.props.distance} onChange={this.props.changeDistance} />
           </div>
         </form>
       </div>

@@ -7,7 +7,7 @@ let races = []
 
 fs.readdir('graphics/characters', (err, files) => {
   if (err) throw new Error(err)
-  races = files.map(value => {
+  races = files.filter(value => value.indexOf('.glb') !== -1).map(value => {
     return path.basename(value).substr(0, path.basename(value).indexOf(path.extname(value)))
   })
 })
@@ -24,27 +24,32 @@ app.get('/races/:racename', (req, res) => {
         return path.basename(img.uri)
       })
       let maxHelm = 0
+      let maxBody = 0
+      let bodyImage
       gltf.nodes.forEach(node => {
         if (node.name.substr(3, 2) === "HE") {
           if (parseInt(node.name.substr(5, 2)) > maxHelm) {
             maxHelm = parseInt(node.name.substr(5, 2))
+          }
+        } else if (node.name.substr(3, 1) === "0") {
+          bodyImage = imgs[gltf.materials[gltf.meshes[node.mesh].primitives[0].material].pbrMetallicRoughness.baseColorTexture.index]
+          if (parseInt(node.name.substr(3, 2)) > maxBody) {
+            maxBody = parseInt(node.name.substr(3, 2))
           }
         }
       })
       let imageSpecs = {}
       imgs.forEach(img => {
         let raceFile = img.indexOf(req.params.racename.toLowerCase()) !== -1
-        console.log(img)
-        console.log(raceFile)
         let alpha = img.indexOf('alpha') !== -1
-        console.log(img.substr(alpha ? img.length - 11 : img.length - 5, 1))
         let partFiles = files.filter(value => value.substr(0, raceFile ? 5 : 3) == img.substr(0, raceFile ? 5 : 3) && value.substr(alpha ? value.length - 11 : value.length - 5, 1) === img.substr(alpha ? img.length - 11 : img.length - 5, 1) && (alpha ? value.indexOf('alpha') !== -1 : value.indexOf('alpha') === -1))
-        console.log(partFiles)
         let maxTexture = 0
         let maxFace = 0
         partFiles.forEach(file => {
-          if (parseInt(file.substr(5, 2)) > maxTexture) {
-            maxTexture = parseInt(file.substr(5, 2))
+          let startNumbers = partFiles[0].search(/[0-9]/)
+          let texture = parseInt(file.substr(startNumbers < 0 ? 0 : startNumbers, 2))
+          if (!isNaN(texture) && texture > maxTexture) {
+            maxTexture = texture
           }
           if (img.substr(3, 2) === "he" && parseInt(file.substr(7, 1)) > maxFace) {
             maxFace = parseInt(file.substr(7, 1))
@@ -56,16 +61,16 @@ app.get('/races/:racename', (req, res) => {
         }
       })
       let keys = Object.keys(imageSpecs)
-      console.log(keys)
-      let he = keys.filter(value => value.indexOf('he0001', 3) !== -1)[0]
-      let lg = keys.filter(value => value.indexOf('lg0001', 3) !== -1)[0]
+      let basePart = keys.filter(value => value.indexOf(req.params.racename.toLowerCase()) !== -1 && value.indexOf('he', 3) === -1)[0]
+      let baseHead = keys.filter(value => value.indexOf(req.params.racename.toLowerCase()) !== -1 && value.indexOf('he', 3) !== -1)[0]
       let modelSpec = {
-        maxFace: he ? imageSpecs[he].maxFace : 0,
+        maxFace: baseHead ? imageSpecs[baseHead].maxFace : 0,
         maxHelm,
-        maxTexture: lg ? imageSpecs[lg].maxTexture : he ? he + 1 < keys.length ? he + 1 : he - 1 : imageSpecs[0].maxTexture,
+        maxTexture: keys.length > 0 ? basePart ? imageSpecs[basePart].maxTexture : imageSpecs[0].maxTexture : 0,
+        maxBodyTexture: bodyImage ? imageSpecs[bodyImage].maxTexture + 6 : 0,
+        maxBody,
         imageSpecs
       }
-      console.log(imageSpecs)
       res.send(modelSpec)
     })
   })
